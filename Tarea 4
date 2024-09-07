@@ -1,0 +1,181 @@
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+// Enumeración para la urgencia de los bultos postales
+enum Urgencia {
+    URGENTE,
+    MEDIO,
+    INDIFERENTE
+};
+
+// Clase base Correspondencia
+class Correspondencia {
+protected:
+    string nombreDestinatario;
+    string direccionDestinatario;
+    string nombreRemitente;
+
+public:
+    Correspondencia(string nd, string dd, string nr) 
+        : nombreDestinatario(nd), direccionDestinatario(dd), nombreRemitente(nr) {}
+
+    virtual ~Correspondencia() {}
+
+    virtual void mostrarDetalles() const = 0; // Método virtual puro
+    virtual float calcularCosto() const = 0; // Método virtual puro
+
+    // Métodos getters
+    string getNombreDestinatario() const {
+        return nombreDestinatario;
+    }
+
+    string getDireccionDestinatario() const {
+        return direccionDestinatario;
+    }
+};
+
+// Clase Carta
+class Carta : public Correspondencia {
+private:
+    string fechaEnvio;
+    bool delExterior;
+
+public:
+    Carta(string nd, string dd, string nr, string fe, bool de) 
+        : Correspondencia(nd, dd, nr), fechaEnvio(fe), delExterior(de) {}
+
+    void mostrarDetalles() const override {
+        cout << "Tipo: Carta\n";
+        cout << "Fecha de envío: " << fechaEnvio << "\n";
+        cout << "Del exterior: " << (delExterior ? "Sí" : "No") << "\n";
+    }
+
+    float calcularCosto() const override {
+        // Implementar la lógica del cálculo del costo
+        // Ejemplo de cálculo, debes ajustar según las reglas exactas
+        if (delExterior) {
+            return 5 + 3; // 5 si es del exterior más 3 adicionales
+        } else {
+            return 8; // 8 si no es del exterior
+        }
+    }
+};
+
+// Clase Telegrama
+class Telegrama : public Correspondencia {
+private:
+    int cantidadPalabras;
+    float impuestoAplicado;
+
+public:
+    Telegrama(string nd, string dd, string nr, int cp, float ia) 
+        : Correspondencia(nd, dd, nr), cantidadPalabras(cp), impuestoAplicado(ia) {}
+
+    void mostrarDetalles() const override {
+        cout << "Tipo: Telegrama\n";
+        cout << "Cantidad de palabras: " << cantidadPalabras << "\n";
+        cout << "Impuesto aplicado: " << impuestoAplicado << "\n";
+    }
+
+    float calcularCosto() const override {
+        return impuestoAplicado; // Asumimos que el impuesto es el costo
+    }
+};
+
+// Clase BultoPostal
+class BultoPostal : public Correspondencia {
+private:
+    float peso;
+    Urgencia urgencia;
+
+public:
+    BultoPostal(string nd, string dd, string nr, float p, Urgencia u) 
+        : Correspondencia(nd, dd, nr), peso(p), urgencia(u) {}
+
+    void mostrarDetalles() const override {
+        cout << "Tipo: Bulto Postal\n";
+        cout << "Peso: " << peso << "\n";
+        cout << "Urgencia: ";
+        switch (urgencia) {
+            case URGENTE: cout << "Urgente"; break;
+            case MEDIO: cout << "Medio"; break;
+            case INDIFERENTE: cout << "Indiferente"; break;
+        }
+        cout << "\n";
+    }
+
+    float calcularCosto() const override {
+        float costo = peso * 4; // Costo base por peso
+        switch (urgencia) {
+            case URGENTE: costo += 10; break;
+            case MEDIO: costo += 8; break;
+            case INDIFERENTE: costo += 6; break;
+        }
+        return costo;
+    }
+};
+
+// Clase OficinaCorreo
+class OficinaCorreo {
+private:
+    vector<Correspondencia*> listaCorrespondencia;
+
+public:
+    ~OficinaCorreo() {
+        for (auto c : listaCorrespondencia) delete c;
+    }
+
+    void recibirCorrespondencia(Correspondencia* c) {
+        listaCorrespondencia.push_back(c);
+    }
+
+    void despacharCorrespondencia() {
+        for (auto c : listaCorrespondencia) {
+            c->mostrarDetalles();
+            cout << "Costo: " << c->calcularCosto() << " USD\n";
+        }
+    }
+
+    void entregarCorrespondencia(string nombreDestinatario, string direccionDestinatario) {
+        for (auto c : listaCorrespondencia) {
+            if (c->getNombreDestinatario() == nombreDestinatario && 
+                c->getDireccionDestinatario() == direccionDestinatario) {
+                cout << "Entregando correspondencia a " << nombreDestinatario << " en " << direccionDestinatario << "\n";
+                c->mostrarDetalles();
+                return;
+            }
+        }
+        cout << "No se encontró correspondencia para " << nombreDestinatario << " en " << direccionDestinatario << "\n";
+    }
+
+    float calcularGanancias() const {
+        float ganancias = 0.0;
+        for (auto c : listaCorrespondencia) {
+            ganancias += c->calcularCosto();
+        }
+        return ganancias;
+    }
+};
+
+int main() {
+    OficinaCorreo oficina;
+
+    // Crear y recibir nueva correspondencia
+    oficina.recibirCorrespondencia(new Carta("Ana Gómez", "Calle Secundaria 456", "Luis Martínez", "05/09/2024", false));
+    oficina.recibirCorrespondencia(new Telegrama("Pedro Ruiz", "Av. Principal 789", "Juan Pérez", 10, 15.0));
+    oficina.recibirCorrespondencia(new BultoPostal("Maria López", "Calle Terciaria 123", "Carlos López", 5.0, URGENTE));
+
+    // Despachar correspondencia
+    oficina.despacharCorrespondencia();
+
+    // Entregar correspondencia
+    oficina.entregarCorrespondencia("Ana Gómez", "Calle Secundaria 456");
+
+    // Calcular y mostrar ganancias
+    cout << "Ganancias totales: " << oficina.calcularGanancias() << " USD\n";
+
+    return 0;
+}
